@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>TaskDash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ─── Header ──────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+        </div>
+        <span class="brand-name">Task<span>Dash</span></span>
+      </div>
+      <div class="header-stats" id="header-stats">
+        <span class="stat-chip" id="stat-total">0 tasks</span>
+        <span class="stat-chip active" id="stat-done">0 done</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── Category Bar ────────────────────────────────────────────────── -->
+  <div class="cat-bar-wrap">
+    <div class="cat-bar" id="cat-bar">
+      <!-- "All" chip always first -->
+      <button class="cat-chip active" data-cat-id="all">
+        <span class="cat-chip-label">All</span>
+      </button>
+      <!-- dynamic chips injected here -->
+    </div>
+    <button class="btn-add-cat" id="btn-add-cat" title="Tambah kategori" aria-label="Tambah kategori">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"/>
+        <line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ─── Main content ─────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Loading -->
+    <div class="loading-wrap" id="loading">
+      <div class="spinner"></div>
+      Memuat data...
+    </div>
+
+    <!-- Firebase error -->
+    <div class="error-banner" id="firebase-error" hidden>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span><strong>Koneksi Firebase gagal</strong> — <span class="err-msg"></span></span>
+    </div>
+
+    <!-- App content -->
+    <div id="app-content" hidden>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="empty-state" hidden>
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="empty-title">Belum ada task</div>
+        <p class="empty-desc">Tekan tombol + di bawah untuk mulai tambah task pertama kamu.</p>
+      </div>
+
+      <!-- Tasks grid -->
+      <div class="tasks-grid" id="tasks-container"></div>
+
+    </div>
+  </main>
+
+  <!-- ─── FAB add task ─────────────────────────────────────────────────── -->
+  <button class="fab" id="fab-add-task" title="Tambah task" aria-label="Tambah task">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+  <!-- ─── Toast container ──────────────────────────────────────────────── -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- ─── Modal: Add Category ─────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="cat-modal" hidden role="dialog" aria-modal="true" aria-labelledby="cat-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="cat-modal-title">Tambah Kategori</div>
+        <button class="modal-close" id="cat-modal-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="cat-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="cat-name-input">Nama Kategori</label>
+          <input class="form-input" id="cat-name-input" type="text" placeholder="mis. Design, Backend, Meeting..." maxlength="40" autocomplete="off" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Warna Badge</label>
+          <div class="color-grid" id="color-grid">
+            <!-- filled by JS -->
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="cat-cancel">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Kategori</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Modal: Add Task ──────────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="task-modal" hidden role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="task-modal-title">Tambah Task</div>
+        <button class="modal-close" id="task-modal-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="task-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="task-title-input">Judul Task</label>
+          <input class="form-input" id="task-title-input" type="text" placeholder="mis. Buat desain landing page..." maxlength="120" autocomplete="off" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori</label>
+          <div class="cat-select" id="task-cat-select">
+            <!-- filled by JS -->
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <div class="status-select" id="task-status-select">
+            <button type="button" class="status-opt active" data-status="draft">Draft</button>
+            <button type="button" class="status-opt" data-status="in-progress">In Progress</button>
+            <button type="button" class="status-opt" data-status="done">Done</button>
+            <button type="button" class="status-opt" data-status="cancel">Cancel</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="task-cancel">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── Modal: Update Task Status ───────────────────────────────────── -->
+  <div class="modal-backdrop" id="status-modal" hidden role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title" id="status-modal-title">Update Status</div>
+        <button class="modal-close" id="status-modal-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="update-task-name" id="status-task-name"></div>
+      <div class="status-select" id="status-modal-select">
+        <button type="button" class="status-opt" data-status="draft">Draft</button>
+        <button type="button" class="status-opt" data-status="in-progress">In Progress</button>
+        <button type="button" class="status-opt" data-status="done">Done</button>
+        <button type="button" class="status-opt" data-status="cancel">Cancel</button>
+      </div>
+      <div class="modal-actions" style="margin-top:20px">
+        <button class="btn btn-ghost" id="status-cancel">Batal</button>
+        <button class="btn btn-primary" id="status-confirm">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Modal: Konfirmasi Hapus Task ────────────────────────────────── -->
+  <div class="modal-backdrop" id="del-task-modal" hidden role="dialog" aria-modal="true">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">Hapus Task?</div>
+        <button class="modal-close" id="del-task-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p style="color:var(--fg-muted);font-size:.9rem;line-height:1.6;margin-bottom:20px;">
+        Task <strong id="del-task-name" style="color:var(--fg)"></strong> akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="del-task-cancel">Batal</button>
+        <button class="btn btn-danger" id="del-task-confirm">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Modal: Konfirmasi Hapus Kategori ─────────────────────────────── -->
+  <div class="modal-backdrop" id="del-cat-modal" hidden role="dialog" aria-modal="true">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <div class="modal-title">Hapus Kategori?</div>
+        <button class="modal-close" id="del-cat-close" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p style="color:var(--fg-muted);font-size:.9rem;line-height:1.6;margin-bottom:20px;">
+        Kategori <strong id="del-cat-name" style="color:var(--fg)"></strong> dan semua task di dalamnya akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="del-cat-cancel">Batal</button>
+        <button class="btn btn-danger" id="del-cat-confirm">Ya, Hapus Semua</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
